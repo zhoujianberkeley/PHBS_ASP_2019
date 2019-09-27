@@ -18,7 +18,6 @@ def normal_formula(strike, spot, vol, texp, intr=0.0, divr=0.0, cp_sign=1):
 
     vol_std = np.fmax(vol * np.sqrt(texp), 1.0e-16)
     d = (forward - strike) / vol_std
-
     price = disc_fac * (cp_sign * (forward - strike) * ss.norm.cdf(cp_sign * d) + vol_std * ss.norm.pdf(d))
     return price
 

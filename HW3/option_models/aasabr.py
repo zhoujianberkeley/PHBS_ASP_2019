@@ -235,8 +235,6 @@ class ModelBsmMC:
     alpha, rho = 0.0, 0.0
     texp, sigma, intr, divr = None, None, None, None
     bsm_model = None
-    timestep = 120
-    n_sample = 1000
     '''
     You may define more members for MC: time step, etc
     '''
@@ -303,8 +301,6 @@ class ModelNormalMC:
     alpha, rho = 0.0, 0.0
     texp, sigma, intr, divr = None, None, None, None
     normal_model = None
-    timestep = 120
-    n_sample = 1000
     
     def __init__(self, texp, sigma, alpha=0, rho=0.0, beta=0.0, intr=0, divr=0):
         self.texp = texp
@@ -365,8 +361,6 @@ class ModelBsmCondMC:
     alpha, rho = 0.0, 0.0
     texp, sigma, intr, divr = None, None, None, None
     bsm_model = None
-    timestep = 120
-    n_sample = 1000
     '''
     You may define more members for MC: time step, etc
     '''
@@ -437,9 +431,7 @@ class ModelNormalCondMC:
     alpha, rho = 0.0, 0.0
     texp, sigma, intr, divr = None, None, None, None
     normal_model = None
-    timestep = 120
-    n_sample = 1000
-
+    
     def __init__(self, texp, sigma, alpha=0, rho=0.0, beta=0.0, intr=0, divr=0):
         self.texp = texp
         self.sigma = sigma

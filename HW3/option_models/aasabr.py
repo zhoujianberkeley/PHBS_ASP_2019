@@ -146,7 +146,8 @@ class ModelHagan:
                     bsm_vol(strike3[1], forward, texp, x[0], x[1], x[2])-vol[1],
                     bsm_vol(strike3[2], forward, texp, x[0], x[1], x[2])-vol[2]]
         
-        sol = sopt.root(helper,[2,2,0.2],method='hybr') 
+        init_values = [1,1,1]
+        sol = sopt.root(helper, init_values,method='broyden1') 
      
         if setval:
             self.sigma = sol.x[0]

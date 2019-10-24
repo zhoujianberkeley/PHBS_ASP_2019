@@ -128,32 +128,33 @@ class ModelHagan:
         you may use sopt.root
         # https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.root.html#scipy.optimize.root
         '''
+        length = len(strike3)
         if texp is None:
-        	texp = self.texp	
+            texp = self.texp
+        if is_vol is False:  # convert price to imp vol 
+            tmp = price_or_vol3.copy()
+            for i in range(length):
+                tmp[i] = self.bsm_model.impvol(price_or_vol3[i], strike3[i], spot, texp, cp_sign)
+            price_or_vol3 = tmp
+        #def bsm_vol(strike, forward, texp, sigma, alpha=0, rho=0, beta=1)
+        
         forward = spot * np.exp(texp*(self.intr - self.divr))
         
-        if is_vol:
-            vol = price_or_vol3                     
-        else:
-            _price = price_or_vol3
-            vol = np.ones(3)
-            vol[0] = self.bsm_model.impvol(_price[0], strike3[0], spot, texp, cp_sign= cp_sign)
-            vol[1] = self.bsm_model.impvol(_price[1], strike3[1], spot, texp, cp_sign= cp_sign)
-            vol[2] = self.bsm_model.impvol(_price[2], strike3[2], spot, texp, cp_sign= cp_sign)
-            
-        def helper(x):
-            return [bsm_vol(strike3[0], forward, texp, x[0], x[1], x[2])-vol[0],
-                    bsm_vol(strike3[1], forward, texp, x[0], x[1], x[2])-vol[1],
-                    bsm_vol(strike3[2], forward, texp, x[0], x[1], x[2])-vol[2]]
-        
-        sol = sopt.root(helper,[2,2,0.2],method='hybr') 
-     
-        if setval:
-            self.sigma = sol.x[0]
-            self.alpha = sol.x[1]
-            self.rho  = sol.x[2]
+        def obj_func(paras):
+            sigma, alpha, rho = paras
+            beta = self.beta
+            equation = np.zeros(length)  # the three equations
+            for i in range(length):
+                vol = price_or_vol3[i]
+                strike = strike3[i]
+                equation[i] = bsm_vol(strike, forward, texp, sigma, alpha, rho, beta) - vol
+            return equation
 
-        return sol.x # sigma, alpha, rho
+        init_values = np.ones(length)/2
+        result = sopt.root(obj_func, init_values)
+        if setval:
+            self.sigma, self.alpha, self.rho = result.x  
+        return result.x  
 
 '''
 Hagan model class for beta=0
@@ -186,7 +187,7 @@ class ModelNormalHagan:
     def impvol(self, price, strike, spot, texp=None, cp_sign=1, setval=False):
         texp = self.texp if(texp is None) else texp
         vol = self.normal_model.impvol(price, strike, spot, texp, cp_sign=cp_sign)
-        forward = spot * np.exp(texp*(self.intr - self.divr))
+        forward = spot * (texp*(self.intr - self.divr))
         
         iv_func = lambda _sigma: \
             norm_vol(strike, forward, texp, _sigma, alpha=self.alpha, rho=self.rho) - vol
@@ -203,29 +204,35 @@ class ModelNormalHagan:
         you may use sopt.root
         # https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.root.html#scipy.optimize.root
         '''
+        length = len(strike3)
         if texp is None:
-	        texp = self.texp
+            texp = self.texp
+        if is_vol is False:  # convert price to imp vol 
+            tmp = price_or_vol3.copy()
+            for i in range(length):
+                tmp[i] = self.normal_model.impvol(price_or_vol3[i], strike3[i], spot, texp, cp_sign)
+            price_or_vol3 = tmp
+
+        #def norm_vol(strike, forward, texp, sigma, alpha=0, rho=0)
         
-        forward = spot * np.exp(texp*(self.intr - self.divr))
-        if is_vol:
-            vol = price_or_vol3                     
-        else:
-            vol = np.ones(3)
-            vol[0] = self.normal_model.impvol(price_or_vol3[0], strike3[0], spot, texp, cp_sign= cp_sign)
-            vol[1] = self.normal_model.impvol(price_or_vol3[1], strike3[1], spot, texp, cp_sign= cp_sign)
-            vol[2] = self.normal_model.impvol(price_or_vol3[2], strike3[2], spot, texp, cp_sign= cp_sign)
-            
-        def helper(x):
-            return [norm_vol(strike3[0], forward, texp, x[0], x[1], x[2])-vol[0],
-                  norm_vol(strike3[1], forward, texp, x[0], x[1], x[2])-vol[1],
-                  norm_vol(strike3[2], forward, texp, x[0], x[1], x[2])-vol[2]]
+        forward = spot + texp*(self.intr - self.divr)
         
-        result = sopt.root(helper,[10,10,0.15],method='hybr') 
-     
+        def obj_func(paras):
+            sigma, alpha, rho = paras
+            beta = self.beta
+            equation = np.zeros(length)  # the three equations
+            for i in range(length):
+                vol = price_or_vol3[i]
+                strike = strike3[i]
+                equation[i] = norm_vol(strike, forward, texp, sigma, alpha, rho) - vol
+            return equation
+
+        init_valus = init_values = [10, 10, -0.5]
+        result = sopt.root(obj_func, init_valus, method='hybr')
         if setval:
-            self.sigma, self.alpha, self.rho = result.x
-        
-        return result.x # sigma, alpha, rho
+            self.sigma, self.alpha, self.rho = result.x  
+        return result.x
+    
 
 '''
 MC model class for Beta=1
